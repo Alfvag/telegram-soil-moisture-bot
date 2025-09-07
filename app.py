@@ -1,5 +1,4 @@
 import logging
-import pyodbc
 import datetime
 import io
 from telegram import Update
@@ -8,7 +7,6 @@ import os
 from dotenv import load_dotenv
 import bot_helpers
 import db_helpers
-
 
 load_dotenv()
 
@@ -29,12 +27,33 @@ def make_plot(df):
 
 # ---------------- BOT HANDLERS ----------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hi! Use /enroll to receive daily reports.")
+    await update.message.reply_text("Hi! Use /subscribe to receive daily reports.")
 
-async def enroll(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    subscribers.add(chat_id)
-    await update.message.reply_text("You have been enrolled for daily reports ✅")
+
+    if not context.args:
+        return await update.effective_chat.send_message("Incorrect password. Access denied ❌")
+
+    if bot_helpers.check_password(context.args[0]):
+        if db_helpers.is_subscriber(chat_id):
+            return await update.effective_chat.send_message("You are already subscribed to daily reports ✅")
+        else:
+            db_helpers.add_subscriber(chat_id)
+            return await update.effective_chat.send_message("You have subscribed to daily reports ✅")
+    else:
+        return await update.effective_chat.send_message("Incorrect password. Access denied ❌")
+    
+async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+
+    if db_helpers.is_subscriber(chat_id):
+        if db_helpers.remove_subscriber(chat_id):
+            return await update.effective_chat.send_message("You have unsubscribed from daily reports ✅")
+        else:
+            return await update.effective_chat.send_message("An error occurred while trying to unsubscribe, please try again later ❌")
+    else:
+        return await update.effective_chat.send_message("You are not currently subscribed ❌")
 
 # New handler for all non-command messages
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -69,7 +88,8 @@ def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("enroll", enroll))
+    app.add_handler(CommandHandler("subscribe", subscribe))
+    app.add_handler(CommandHandler("unsubscribe", unsubscribe))
     
     # Add handler for regular messages (non-commands)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
