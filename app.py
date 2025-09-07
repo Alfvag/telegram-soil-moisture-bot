@@ -17,18 +17,12 @@ TELEGRAM_TOKEN = os.getenv("BOT_API_KEY")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize subscribers set
-subscribers = set()
-
 # ---------------- GRAPH ----------------
 def make_plot(df):
     # Add implementation here
     pass
 
 # ---------------- BOT HANDLERS ----------------
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hi! Use /subscribe to receive daily reports.")
-
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
 
@@ -74,12 +68,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(response)
 
 # ---------------- DAILY JOB ----------------
-async def send_daily_reports(app: Application):
-    if not subscribers:
-        return
+async def send_daily_reports(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    subscribers = db_helpers.get_subscribers()
+
     try:
-        for chat_id in subscribers:
-            await app.bot.send_message(chat_id=chat_id, text="Here is your daily soil moisture report!")
+        for row in subscribers:
+            await context.bot.send_message(chat_id=str(row[0]), text="Here is your daily soil moisture report!")
     except Exception as e:
         logger.error(f"Error sending reports: {e}")
 
@@ -87,9 +81,15 @@ async def send_daily_reports(app: Application):
 def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
+    # Command handlers
     app.add_handler(CommandHandler("subscribe", subscribe))
     app.add_handler(CommandHandler("unsubscribe", unsubscribe))
+    app.add_handler(CommandHandler("manual", send_daily_reports))
+
+    # Schedule daily reports at 9 AM
+    #print(datetime.time.tzinfo)
+    #app.job_queue.run_daily(send_daily_reports, time=datetime.time(hour=0, minute=35, second=0))
+    app.job_queue.run_repeating(send_daily_reports, interval=60, first=10)
     
     # Add handler for regular messages (non-commands)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
