@@ -22,12 +22,11 @@ def get_connection():
     return pyodbc.connect(str(connection_string))
 
 def query_data():
-
     conn = get_connection()
 
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM moisturelog")
+        cursor.execute("SELECT plant_name, moisture, timestamp FROM moisturelog")
         rows = cursor.fetchall()
         return rows
     except pyodbc.Error as e:
@@ -37,17 +36,67 @@ def query_data():
         conn.close()
 
 def add_subscriber(chat_id):
-    pass
+    conn = get_connection()
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO subscribers (chat_id) VALUES (?)", (str(chat_id),))
+        conn.commit()
+        return True
+    except pyodbc.Error as e:
+        print("Error querying data:", e)
+        return False
+    finally:
+        conn.close()
 
 def remove_subscriber(chat_id):
-    pass
+    conn = get_connection()
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM subscribers WHERE chat_id = ?", (str(chat_id),))
+        conn.commit()
+        
+        row = cursor.rowcount
+        if (row < 1 or not row):
+            return False
+        else:
+            return True
+
+    except pyodbc.Error as e:
+        print("Error querying data:", e)
+        return False
+    finally:
+        conn.close()
+
+def is_subscriber(chat_id):
+    conn = get_connection()
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT chat_id FROM subscribers WHERE chat_id = ?", (str(chat_id)))
+        row = cursor.fetchone()
+
+        if not row:
+            return False
+        else:
+            return True
+    except pyodbc.Error as e:
+        print("Error querying data:", e)
+        return False
+    finally:
+        conn.close()
 
 def get_subscribers():
-    pass
+    conn = get_connection()
 
-if __name__ == "__main__":
-    print(pyodbc.drivers())
-
-    data = query_data()
-    for row in data:
-        print(row)
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT chat_id FROM subscribers")
+        rows = cursor.fetchall()
+        return rows
+    except pyodbc.Error as e:
+        print("Error querying data:", e)
+        return []
+    finally:
+        conn.close()
