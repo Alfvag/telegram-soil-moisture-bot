@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 import bot_helpers
 import db_helpers
+import pytz
 
 load_dotenv()
 
@@ -16,11 +17,6 @@ TELEGRAM_TOKEN = os.getenv("BOT_API_KEY")
 # ---------------- LOGGING ----------------
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# ---------------- GRAPH ----------------
-def make_plot(df):
-    # Add implementation here
-    pass
 
 # ---------------- BOT HANDLERS ----------------
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -68,7 +64,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(response)
 
 # ---------------- DAILY JOB ----------------
-async def send_daily_reports(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def send_daily_reports(context: ContextTypes.DEFAULT_TYPE):
     subscribers = db_helpers.get_subscribers()
 
     try:
@@ -77,6 +73,15 @@ async def send_daily_reports(update: Update, context: ContextTypes.DEFAULT_TYPE)
     except Exception as e:
         logger.error(f"Error sending reports: {e}")
 
+async def send_daily_reports_manual(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+
+    if db_helpers.is_subscriber(chat_id):
+        await update.effective_chat.send_message("Sending you the daily report now!")
+        await send_daily_reports(context)
+    else:
+        await update.effective_chat.send_message("You are not subscribed to daily reports. Use /subscribe <password> to subscribe.")
+
 # ---------------- MAIN ----------------
 def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
@@ -84,12 +89,11 @@ def main():
     # Command handlers
     app.add_handler(CommandHandler("subscribe", subscribe))
     app.add_handler(CommandHandler("unsubscribe", unsubscribe))
-    app.add_handler(CommandHandler("manual", send_daily_reports))
+    app.add_handler(CommandHandler("manual", send_daily_reports_manual))
 
     # Schedule daily reports at 9 AM
-    #print(datetime.time.tzinfo)
-    #app.job_queue.run_daily(send_daily_reports, time=datetime.time(hour=0, minute=35, second=0))
-    app.job_queue.run_repeating(send_daily_reports, interval=60, first=10)
+    timezone = pytz.timezone("Europe/Stockholm")
+    app.job_queue.run_daily(send_daily_reports, time=datetime.time(hour=22, minute=20, second=0, tzinfo=timezone))
     
     # Add handler for regular messages (non-commands)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))

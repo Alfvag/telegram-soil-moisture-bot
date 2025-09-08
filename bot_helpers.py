@@ -9,15 +9,15 @@ def check_password(password):
     
     return False
 
-def fetch_subscribers():
-    pass
+def message_builder(data):
+    # query_result = 
 
-def fetch_data():
-    pass
 
-def enroll_subscriber(chat_id):
-    pass
-
-def unenroll_subscriber(chat_id):
-    pass
-
+    message = "🌱 Soil Moisture Report 🌱\n\n"
+    for plant_name, moisture, timestamp in data:
+        message += f"Plant: {plant_name}\n"
+        message += f"Moisture: {moisture}%\n"
+        message += f"Timestamp: {timestamp}\n"
+        message += "-----------------------\n"
+    
+    return message

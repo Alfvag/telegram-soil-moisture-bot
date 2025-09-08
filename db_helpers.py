@@ -22,13 +22,39 @@ def get_connection():
     return pyodbc.connect(str(connection_string))
 
 def query_data():
+    plants = get_plants()
+
     conn = get_connection()
 
     try:
         cursor = conn.cursor()
         cursor.execute("SELECT plant_name, moisture, timestamp FROM moisturelog")
         rows = cursor.fetchall()
+
+        
+
+
         return rows
+    except pyodbc.Error as e:
+        print("Error querying data:", e)
+        return []
+    finally:
+        conn.close()
+
+def get_plants():
+    conn = get_connection()
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT plant_name FROM plants")
+        rows = cursor.fetchall()
+
+        result = list()
+
+        for row in rows:
+            result.append(row[0])
+
+        return result
     except pyodbc.Error as e:
         print("Error querying data:", e)
         return []
@@ -100,3 +126,6 @@ def get_subscribers():
         return []
     finally:
         conn.close()
+
+if __name__ == "__main__":
+    print(get_plants())
