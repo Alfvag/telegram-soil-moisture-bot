@@ -32,7 +32,7 @@ def query_data():
         for plant in plants:
             print(plant)
 
-            cursor.execute("SELECT plant_name, moisture, timestamp FROM moisturelog WHERE plant_name = ? ORDER BY timestamp DESC LIMIT 24", (plant,))
+            cursor.execute("SELECT plant_name, moisture, timestamp FROM moisturelog WHERE plant_name = ? ORDER BY timestamp DESC LIMIT 200", (plant,))
             rows = cursor.fetchall()
             
             # Create a dictionary for this plant's data
