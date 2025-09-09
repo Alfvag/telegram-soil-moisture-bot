@@ -145,9 +145,3 @@ def get_subscribers():
         return []
     finally:
         conn.close()
-
-if __name__ == "__main__":
-    list = query_data()
-
-    for plant in list:
-        print(plant)

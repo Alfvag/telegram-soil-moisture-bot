@@ -34,6 +34,3 @@ def message_builder():
         message += "\n"  # Add a blank line between plants
     
     return message
-
-if __name__ == "__main__":
-    print(message_builder())
