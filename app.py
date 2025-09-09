@@ -51,22 +51,22 @@ async def send_daily_reports(context: ContextTypes.DEFAULT_TYPE):
 
     graph = bot_helpers.generate_moisture_plot()
 
-    try:
-        for row in subscribers:
-            return await context.bot.send_photo(chat_id=str(row[0]), photo=graph, caption=bot_helpers.message_builder())
-    except Exception as e:
-        logger.error(f"Error sending reports: {e}")
+    for row in subscribers:
+        try:
+            await context.bot.send_photo(chat_id=str(row[0]), photo=graph, caption=bot_helpers.message_builder())
+        except Exception as e:
+            logger.error(f"Error sending reports: {e}")
 
 async def send_daily_reports_manual(update: Update, context: ContextTypes.DEFAULT_TYPE):
     subscribers = db_helpers.get_subscribers()
 
     graph = bot_helpers.generate_moisture_plot()
 
-    try:
-        for row in subscribers:
-            return await context.bot.send_photo(chat_id=str(row[0]), photo=graph, caption=bot_helpers.message_builder())
-    except Exception as e:
-        logger.error(f"Error sending reports: {e}")
+    for row in subscribers:
+        try:
+            await context.bot.send_photo(chat_id=str(row[0]), photo=graph, caption=bot_helpers.message_builder())
+        except Exception as e:
+            logger.error(f"Error sending reports: {e}")
 
 # ---------------- MAIN ----------------
 def main():
