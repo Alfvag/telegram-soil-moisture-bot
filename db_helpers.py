@@ -23,18 +23,37 @@ def get_connection():
 
 def query_data():
     plants = get_plants()
-
     conn = get_connection()
+    result = list()
 
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT plant_name, moisture, timestamp FROM moisturelog")
-        rows = cursor.fetchall()
 
-        
+        for plant in plants:
+            print(plant)
 
+            cursor.execute("SELECT plant_name, moisture, timestamp FROM moisturelog WHERE plant_name = ? ORDER BY timestamp DESC LIMIT 24", (plant,))
+            rows = cursor.fetchall()
+            
+            # Create a dictionary for this plant's data
+            plant_data = {
+                "plant_name": plant,
+                "measurements": []
+            }
+            
+            # Add each measurement to the plant's data
+            for row in rows:
+                measurement = {
+                    "plant_name": row[0],
+                    "moisture": row[1],
+                    "timestamp": row[2]
+                }
+                plant_data["measurements"].append(measurement)
+            
+            # Add this plant's data to the result list
+            result.append(plant_data)
 
-        return rows
+        return result
     except pyodbc.Error as e:
         print("Error querying data:", e)
         return []
@@ -128,4 +147,7 @@ def get_subscribers():
         conn.close()
 
 if __name__ == "__main__":
-    print(get_plants())
+    list = query_data()
+
+    for plant in list:
+        print(plant)

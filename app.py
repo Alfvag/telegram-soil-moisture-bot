@@ -45,42 +45,24 @@ async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         return await update.effective_chat.send_message("You are not currently subscribed ❌")
 
-# New handler for all non-command messages
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle all incoming messages that are not commands."""
-    message_text = update.message.text
-    user_name = update.message.from_user.first_name
-    logger.info(f"Received message from {user_name}: {message_text}")
-
-    print(update)
-    print(f"Chat ID: {update.message.chat_id} Message text: {message_text}")
-    
-    # Simple response logic
-    response = f"Hello {user_name}! I received your message: '{message_text}'\n\n"
-    response += "I can help you with soil moisture data. Use these commands:\n"
-    response += "- /start - Get started with the bot\n"
-    response += "- /enroll - Receive daily reports"
-    
-    await update.message.reply_text(response)
-
 # ---------------- DAILY JOB ----------------
 async def send_daily_reports(context: ContextTypes.DEFAULT_TYPE):
     subscribers = db_helpers.get_subscribers()
 
     try:
         for row in subscribers:
-            await context.bot.send_message(chat_id=str(row[0]), text="Here is your daily soil moisture report!")
+            await context.bot.send_message(chat_id=str(row[0]), text=bot_helpers.message_builder())
     except Exception as e:
         logger.error(f"Error sending reports: {e}")
 
 async def send_daily_reports_manual(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
+    subscribers = db_helpers.get_subscribers()
 
-    if db_helpers.is_subscriber(chat_id):
-        await update.effective_chat.send_message("Sending you the daily report now!")
-        await send_daily_reports(context)
-    else:
-        await update.effective_chat.send_message("You are not subscribed to daily reports. Use /subscribe <password> to subscribe.")
+    try:
+        for row in subscribers:
+            await context.bot.send_message(chat_id=str(row[0]), text=bot_helpers.message_builder())
+    except Exception as e:
+        logger.error(f"Error sending reports: {e}")
 
 # ---------------- MAIN ----------------
 def main():
@@ -94,9 +76,6 @@ def main():
     # Schedule daily reports at 9 AM
     timezone = pytz.timezone("Europe/Stockholm")
     app.job_queue.run_daily(send_daily_reports, time=datetime.time(hour=22, minute=20, second=0, tzinfo=timezone))
-    
-    # Add handler for regular messages (non-commands)
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     app.run_polling()
 
