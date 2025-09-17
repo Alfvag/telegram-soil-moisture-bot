@@ -1,6 +1,5 @@
 import logging
 import datetime
-import io
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 import os
@@ -55,15 +54,6 @@ async def send_daily_reports(context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.error(f"Error sending reports: {e}")
 
-async def send_daily_reports_manual(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    subscribers = db_helpers.get_subscribers()
-
-    for row in subscribers:
-        try:
-            await context.bot.send_photo(chat_id=str(row[0]), photo=bot_helpers.generate_moisture_plot(), caption=bot_helpers.message_builder())
-        except Exception as e:
-            logger.error(f"Error sending reports: {e}")
-
 # ---------------- MAIN ----------------
 def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
@@ -71,7 +61,6 @@ def main():
     # Command handlers
     app.add_handler(CommandHandler("subscribe", subscribe))
     app.add_handler(CommandHandler("unsubscribe", unsubscribe))
-    app.add_handler(CommandHandler("manual", send_daily_reports_manual))
 
     # Schedule daily reports at 9 AM
     timezone = pytz.timezone("Europe/Stockholm")
